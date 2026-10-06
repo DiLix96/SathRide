@@ -1,0 +1,483 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  PASSENGER
+  DRIVER
+  BOTH
+  ADMIN
+}
+
+enum Gender {
+  FEMALE
+  MALE
+  UNDISCLOSED
+}
+
+enum Preference {
+  FEMALE_ONLY
+  MALE_ONLY
+  MIXED
+}
+
+enum VerificationKind {
+  PHONE
+  IDENTITY
+  UNIVERSITY
+  WORKPLACE
+  LICENCE
+  VEHICLE
+}
+
+enum ReviewStatus {
+  NOT_SUBMITTED
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum RideStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum BookingStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+  COMPLETED
+}
+
+model User {
+  id               String                   @id
+  name             String
+  email            String                   @unique
+  emailVerified    Boolean                  @default(false)
+  image            String?
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  role             Role                     @default(PASSENGER)
+  suspended        Boolean                  @default(false)
+  sessions         Session[]
+  accounts         Account[]
+  profile          Profile?
+  vehicles         Vehicle[]
+  verifications    VerificationSubmission[]
+  drivenRides      Ride[]
+  bookings         Booking[]
+  communities      Community[]
+  memberships      CommunityMembership[]
+  series           RideSeries[]
+  groupMemberships GroupMembership[]
+  skips            JourneySkip[]
+  messages         Message[]
+  reads            ConversationRead[]
+  notifications    Notification[]
+  reviewsWritten   Review[]                 @relation("author")
+  reviewsReceived  Review[]                 @relation("subject")
+  reports          Report[]                 @relation("reporter")
+  reportsReceived  Report[]                 @relation("reported")
+  blocks           Block[]                  @relation("blocker")
+  blockedBy        Block[]                  @relation("blocked")
+  shares           ShareToken[]
+  locations        LocationUpdate[]
+  audits           AdminAudit[]
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+}
+
+model Profile {
+  id             String     @id @default(cuid())
+  userId         String     @unique
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phone          String?    @unique
+  city           String     @default("Islamabad")
+  gender         Gender     @default(UNDISCLOSED)
+  institution    String?
+  bio            String     @default("")
+  emergencyName  String?
+  emergencyPhone String?
+  preference     Preference @default(MIXED)
+  onboarded      Boolean    @default(false)
+}
+
+model Vehicle {
+  id           String       @id @default(cuid())
+  driverId     String
+  driver       User         @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  make         String
+  model        String
+  colour       String
+  registration String
+  seats        Int
+  rides        Ride[]
+  series       RideSeries[]
+
+  @@index([driverId])
+}
+
+model VerificationSubmission {
+  id              String           @id @default(cuid())
+  userId          String
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind            VerificationKind
+  status          ReviewStatus     @default(PENDING)
+  filename        String?
+  mime            String?
+  note            String?
+  rejectionReason String?
+  reviewedAt      DateTime?
+  createdAt       DateTime         @default(now())
+
+  @@unique([userId, kind])
+  @@index([status])
+}
+
+model Community {
+  id          String                @id @default(cuid())
+  name        String
+  type        String
+  city        String
+  description String
+  ownerId     String
+  owner       User                  @relation(fields: [ownerId], references: [id])
+  memberships CommunityMembership[]
+  rides       Ride[]
+  series      RideSeries[]
+  createdAt   DateTime              @default(now())
+}
+
+model CommunityMembership {
+  id          String       @id @default(cuid())
+  communityId String
+  community   Community    @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status      ReviewStatus @default(PENDING)
+
+  @@unique([communityId, userId])
+}
+
+model RideSeries {
+  id           String            @id @default(cuid())
+  name         String
+  driverId     String
+  driver       User              @relation(fields: [driverId], references: [id])
+  vehicleId    String
+  vehicle      Vehicle           @relation(fields: [vehicleId], references: [id])
+  communityId  String?
+  community    Community?        @relation(fields: [communityId], references: [id])
+  pickup       String
+  destination  String
+  route        Json
+  time         String
+  weekdays     Int[]
+  capacity     Int
+  price        Int
+  preference   Preference
+  active       Boolean           @default(true)
+  rides        Ride[]
+  members      GroupMembership[]
+  conversation Conversation?
+  createdAt    DateTime          @default(now())
+}
+
+model GroupMembership {
+  id       String       @id @default(cuid())
+  seriesId String
+  series   RideSeries   @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status   ReviewStatus @default(PENDING)
+
+  @@unique([seriesId, userId])
+}
+
+model Ride {
+  id               String           @id @default(cuid())
+  driverId         String
+  driver           User             @relation(fields: [driverId], references: [id])
+  vehicleId        String
+  vehicle          Vehicle          @relation(fields: [vehicleId], references: [id])
+  seriesId         String?
+  series           RideSeries?      @relation(fields: [seriesId], references: [id])
+  communityId      String?
+  community        Community?       @relation(fields: [communityId], references: [id])
+  pickup           String
+  destination      String
+  route            Json
+  routeApproximate Boolean          @default(true)
+  departure        DateTime
+  capacity         Int
+  price            Int
+  preference       Preference       @default(MIXED)
+  luggage          String           @default("Small bag")
+  smoking          Boolean          @default(false)
+  notes            String           @default("")
+  status           RideStatus       @default(SCHEDULED)
+  createdAt        DateTime         @default(now())
+  waypoints        Waypoint[]
+  bookings         Booking[]
+  skips            JourneySkip[]
+  conversation     Conversation?
+  reviews          Review[]
+  reports          Report[]
+  shares           ShareToken[]
+  locations        LocationUpdate[]
+
+  @@unique([seriesId, departure])
+  @@index([status, departure])
+  @@index([driverId])
+}
+
+model Waypoint {
+  id       String @id @default(cuid())
+  rideId   String
+  ride     Ride   @relation(fields: [rideId], references: [id], onDelete: Cascade)
+  label    String
+  lat      Float
+  lng      Float
+  position Int
+
+  @@unique([rideId, position])
+}
+
+model Booking {
+  id           String        @id @default(cuid())
+  rideId       String
+  ride         Ride          @relation(fields: [rideId], references: [id])
+  passengerId  String
+  passenger    User          @relation(fields: [passengerId], references: [id])
+  seats        Int
+  contribution Int
+  settled      Boolean       @default(false)
+  status       BookingStatus @default(PENDING)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  conversation Conversation?
+
+  events BookingEvent[]
+
+  @@unique([rideId, passengerId])
+  @@index([rideId, status])
+  @@index([passengerId, status])
+}
+
+model JourneySkip {
+  id     String @id @default(cuid())
+  rideId String
+  ride   Ride   @relation(fields: [rideId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([rideId, userId])
+}
+
+model Conversation {
+  id        String             @id @default(cuid())
+  bookingId String?            @unique
+  booking   Booking?           @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  rideId    String?            @unique
+  ride      Ride?              @relation(fields: [rideId], references: [id], onDelete: Cascade)
+  seriesId  String?            @unique
+  series    RideSeries?        @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  messages  Message[]
+  reads     ConversationRead[]
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id])
+  text           String
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+model ConversationRead {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  readAt         DateTime     @default(now())
+
+  @@unique([conversationId, userId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  body      String
+  href      String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, read, createdAt])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  rideId    String
+  ride      Ride     @relation(fields: [rideId], references: [id])
+  authorId  String
+  author    User     @relation("author", fields: [authorId], references: [id])
+  subjectId String
+  subject   User     @relation("subject", fields: [subjectId], references: [id])
+  rating    Int
+  text      String
+  createdAt DateTime @default(now())
+
+  @@unique([rideId, authorId, subjectId])
+  @@index([subjectId])
+}
+
+model Report {
+  id         String   @id @default(cuid())
+  reporterId String
+  reporter   User     @relation("reporter", fields: [reporterId], references: [id])
+  subjectId  String?
+  subject    User?    @relation("reported", fields: [subjectId], references: [id])
+  rideId     String?
+  ride       Ride?    @relation(fields: [rideId], references: [id])
+  reason     String
+  resolved   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}
+
+model Block {
+  id        String @id @default(cuid())
+  blockerId String
+  blocker   User   @relation("blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockedId String
+  blocked   User   @relation("blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+}
+
+model ShareToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id])
+  rideId    String
+  ride      Ride     @relation(fields: [rideId], references: [id])
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+
+  @@index([rideId])
+}
+
+model LocationUpdate {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rideId    String
+  ride      Ride     @relation(fields: [rideId], references: [id], onDelete: Cascade)
+  lat       Float
+  lng       Float
+  updatedAt DateTime @updatedAt
+
+  @@unique([rideId, userId])
+  @@index([updatedAt])
+}
+
+model AdminAudit {
+  id        String   @id @default(cuid())
+  adminId   String
+  admin     User     @relation(fields: [adminId], references: [id])
+  action    String
+  target    String
+  reason    String
+  createdAt DateTime @default(now())
+}
+
+model RateLimit {
+  key       String   @id
+  count     Int      @default(1)
+  expiresAt DateTime
+}
+
+model DevDelivery {
+  id        String   @id @default(cuid())
+  to        String
+  kind      String
+  text      String
+  createdAt DateTime @default(now())
+
+  @@index([to, createdAt])
+}
+
+model AuthRateLimit {
+  id          String @id @default(cuid())
+  key         String @unique
+  count       Int
+  lastRequest BigInt
+}
+
+model BookingEvent {
+  id        String        @id @default(cuid())
+  bookingId String
+  booking   Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  status    BookingStatus
+  createdAt DateTime      @default(now())
+
+  @@index([bookingId, createdAt])
+}

@@ -1,0 +1,11 @@
+node_modules/
+.next/
+src/generated/
+.env*
+!.env.example
+storage/private/*
+!storage/private/.gitkeep
+.local-pg/
+playwright-report/
+test-results/
+*.tsbuildinfo
