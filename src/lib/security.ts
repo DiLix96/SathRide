@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { db } from "./db";
 import { AppError } from "./rules";
+import { accessOrigins } from "./access";
 export async function rateLimit(key: string, max = 60, seconds = 60) {
   const hash = createHash("sha256").update(key).digest("hex");
   const now = new Date();
@@ -14,7 +15,8 @@ export function checkOrigin(req: Request) {
   const origin = req.headers.get("origin");
   if (
     origin &&
-    origin !== new URL(process.env.BETTER_AUTH_URL || req.url).origin
+    !accessOrigins().includes(origin) &&
+    (process.env.BETTER_AUTH_URL || origin !== new URL(req.url).origin)
   )
     throw new AppError("Cross-site request rejected.", 403);
 }

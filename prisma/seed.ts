@@ -1,6 +1,7 @@
 import { db } from "../src/lib/db";
 import { hashPassword } from "better-auth/crypto";
 import { places } from "../src/lib/strings";
+import { setupDemoAdmin } from "../src/lib/demo-admin";
 import { generateSeries } from "../src/lib/service";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -69,6 +70,7 @@ try {
       update: {},
     });
   }
+  await setupDemoAdmin();
   const vehicles = [
     ["hamza", "Toyota", "Corolla", "White", 4],
     ["amna", "Suzuki", "Alto", "Silver", 3],

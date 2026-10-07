@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
+import { accessOrigins } from "./src/lib/access";
 const config: NextConfig = {
   poweredByHeader: false,
+  allowedDevOrigins: accessOrigins().map((origin) => new URL(origin).hostname),
   async headers() {
     return [
       {

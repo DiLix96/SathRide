@@ -3,6 +3,7 @@ import { APIError } from "better-auth/api";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { db } from "./db";
 import { deliver, deliveryAvailable } from "./providers";
+import { accessOrigins, authBaseURL } from "./access";
 if (
   process.env.NODE_ENV === "production" &&
   (!process.env.BETTER_AUTH_SECRET ||
@@ -31,7 +32,8 @@ export const auth = betterAuth({
     },
   },
   appName: "SathRide",
-  baseURL: process.env.BETTER_AUTH_URL,
+  baseURL: authBaseURL(),
+  trustedOrigins: accessOrigins(),
   secret: process.env.BETTER_AUTH_SECRET,
   database: prismaAdapter(db, { provider: "postgresql" }),
   emailAndPassword: {

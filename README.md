@@ -43,6 +43,34 @@ Open **http://localhost:3000**. `BETTER_AUTH_URL` must match the address used in
 your browser. Development listens on all interfaces; use the localhost address
 for the default authentication configuration.
 
+## Open on an Android phone
+
+Connect the computer and phone to the same Wi-Fi. Keep the local database
+running, stop any existing development server, then run:
+
+```bash
+npm run dev:phone
+```
+
+Open the Wi-Fi address printed by the command in Chrome on Android (for
+example, `http://192.168.0.107:3000`). Use the address for your Wi-Fi adapter
+if several addresses appear. Localhost continues to work on the computer;
+you do not need to edit `BETTER_AUTH_URL`. Login and API requests accept only
+the configured origin and the exact local addresses discovered by this command.
+Restart the command if your computer's Wi-Fi address changes. To use a different
+port, set `PORT` before starting the command.
+
+Keep the computer awake and both terminals running. If the phone cannot connect,
+check that your firewall permits incoming TCP on the chosen port from your local
+network and that the Wi-Fi does not isolate devices (guest networks often do).
+This address works on the same network; access over mobile data requires hosting.
+
+Browsing, sign-in and booking work over local HTTP. Android requires trusted HTTPS
+for GPS, service workers and installation as an app. When hosted on HTTPS, open
+the site in Chrome and choose **Install app** or **Add to Home screen** from the
+menu. Set `BETTER_AUTH_URL` to that HTTPS address for production; local phone
+origins are ignored in production.
+
 ## Local setup on Windows
 
 Install Node.js 24. In PowerShell, enter the project directory and run:
@@ -62,7 +90,11 @@ in this workspace.
 ## Try the demo
 
 All seeded names, accounts, documents and institutional affiliations are
-fictional. The shared development password is **`SathRideDemo!2026`**.
+fictional. The shared development password for passenger and driver accounts is
+**`SathRideDemo!2026`**. The administrator login is **`admin`** with password
+**`admin123`** (the administrator email also works). To create or reset just this
+local administrator account, run `npm run db:admin`. This setup is disabled in
+production, where demo accounts cannot sign in.
 
 | Email | Role / useful flow |
 | --- | --- |

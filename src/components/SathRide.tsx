@@ -715,7 +715,11 @@ function AuthPage({ screen, cap }: { screen: string; cap: any }) {
                   ? "auth/sign-up/email"
                   : "auth/sign-in/email",
                 {
-                  email: d.email,
+                  email:
+                    screen === "login" &&
+                    d.email.trim().toLowerCase() === "admin"
+                      ? "admin@demo.sathride.test"
+                      : d.email,
                   password: d.password,
                   ...(screen === "register" ? { name: d.name } : {}),
                 },
@@ -727,15 +731,26 @@ function AuthPage({ screen, cap }: { screen: string; cap: any }) {
             {screen === "register" && (
               <Field label="Full name" name="name" required />
             )}
-            <Field label="Email address" name="email" type="email" required />
+            <Field
+              label={
+                screen === "login"
+                  ? "Email address or username"
+                  : "Email address"
+              }
+              name="email"
+              type={screen === "login" ? "text" : "email"}
+              required
+            />
             {screen !== "recover" && (
               <Field
                 label="Password"
                 name="password"
                 type="password"
                 required
-                min={10}
-                help="At least 10 characters."
+                min={screen === "register" ? 10 : undefined}
+                help={
+                  screen === "register" ? "At least 10 characters." : undefined
+                }
               />
             )}
             {screen === "recover" && !cap?.delivery && (
