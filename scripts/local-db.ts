@@ -15,8 +15,7 @@ const postgres = new EmbeddedPostgres({
   postgresFlags: [
     "-h",
     "127.0.0.1",
-    "-k",
-    resolve(".local-pg"),
+    ...(process.platform === "win32" ? [] : ["-k", resolve(".local-pg")]),
     "-c",
     "log_statement=none",
   ],

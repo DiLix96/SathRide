@@ -8,8 +8,8 @@ export default defineConfig({
     baseURL: "http://localhost:3000",
     headless: true,
     launchOptions: {
-      executablePath: process.env.CHROME_PATH || "/usr/bin/google-chrome",
-      args: ["--no-sandbox"],
+      executablePath: process.env.CHROME_PATH || undefined,
+      args: process.platform === "linux" ? ["--no-sandbox"] : [],
     },
   },
   reporter: "list",

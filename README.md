@@ -71,21 +71,59 @@ the site in Chrome and choose **Install app** or **Add to Home screen** from the
 menu. Set `BETTER_AUTH_URL` to that HTTPS address for production; local phone
 origins are ignored in production.
 
-## Local setup on Windows
+## Local setup on Windows (PowerShell)
 
-Install Node.js 24. In PowerShell, enter the project directory and run:
+Install **Git for Windows**, **Node.js 24 LTS** (including npm), and **Docker
+Desktop** with its WSL 2 backend. Start Docker Desktop and wait until its engine
+is running. Run these commands in PowerShell (a regular user terminal is enough):
 
 ```powershell
+git clone https://github.com/DiLix96/SathRide.git
+cd SathRide
 npm ci
-Copy-Item .env.example .env
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+npm run setup
+npm run dev
 ```
 
-Paste the generated value into `BETTER_AUTH_SECRET` in `.env`. With Docker
-Desktop running, start PostgreSQL using `docker compose up -d db`, then run the
-same `db:generate`, `db:migrate`, `db:seed` and `dev` commands shown above.
-WSL can use the Ubuntu instructions. Native Windows setup has not been tested
-in this workspace.
+Open **http://localhost:3000**. Setup creates a private `.env` with a random
+authentication secret, starts PostgreSQL, waits for it to be healthy, generates
+the Prisma client, applies migrations, and adds the fictional demo accounts.
+It preserves an existing `.env` and database. Keep the app terminal open;
+PostgreSQL runs in Docker in the background. See the demo accounts below.
+
+On later runs, start Docker Desktop, then use `docker compose up -d --wait db`
+and `npm run dev`. To update an existing checkout, stop the app and run:
+
+```powershell
+git pull --ff-only
+npm ci
+npm run setup
+npm run dev
+```
+
+`docker compose stop db` stops the database while preserving its data. Avoid
+`docker compose down -v` unless you intend to delete all local database data.
+Do not share `.env`, uploaded documents, or database files.
+
+If PowerShell reports that `npm.ps1` cannot run, use `npm.cmd` for the npm
+commands above, or run the same commands in Command Prompt. If port 5432 is
+already occupied, stop the other database or change the host port in
+`compose.yaml` and the port in `.env` together. A Docker authentication error
+usually means an existing volume was created with different database credentials;
+restore the matching credentials instead of deleting data.
+
+### Without Docker (Windows x64, Linux, or macOS)
+
+After `npm ci`, run `npm run setup -- --env-only`, then keep
+`npm run db:local` running in a second terminal. In the first terminal run
+`npm run setup -- --no-docker` and `npm run dev`. The embedded database is stored
+in `.local-pg/`. Windows ARM users should use Docker or an existing PostgreSQL
+server. For your own PostgreSQL server, configure `DATABASE_URL` in `.env` and
+use `npm run setup -- --no-docker` once that database is available.
+
+GitHub Actions checks fresh Windows and Linux installations, including database
+migrations, seed data, lint, TypeScript, unit tests, production build, integration
+workflows and browser tests. See the repository's **Actions** tab for results.
 
 ## Try the demo
 
@@ -139,8 +177,14 @@ booking workflows, and clean up their fixtures. Browser tests create a fresh
 ride (cancelled after the test) and a registration account. Run these against a development
 database.
 
-Browser tests use `/usr/bin/google-chrome` by default. Set `CHROME_PATH` to your
-installed Chrome executable on other systems. For example in PowerShell:
+Install the browser used by Playwright before running browser checks:
+
+```bash
+npx playwright install chromium
+```
+
+Browser tests use Playwright's Chromium by default on every platform. To use an
+existing Chrome installation instead, set `CHROME_PATH`. For example in PowerShell:
 
 ```powershell
 $env:CHROME_PATH = 'C:\Program Files\Google\Chrome\Application\chrome.exe'

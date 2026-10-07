@@ -11,5 +11,5 @@ export default defineConfig([
       "react-hooks/refs": "off",
     },
   },
-  globalIgnores(["src/generated/**", ".next/**", ".local-pg/**"]),
+  globalIgnores(["src/generated/**", ".next/**", ".local-pg/**", ".ci-pg/**"]),
 ]);

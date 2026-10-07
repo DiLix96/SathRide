@@ -6,6 +6,7 @@ src/generated/
 storage/private/*
 !storage/private/.gitkeep
 .local-pg/
+.ci-pg/
 playwright-report/
 test-results/
 *.tsbuildinfo
